@@ -12,6 +12,7 @@ import (
 )
 
 const (
+	pathProjRoot = "github.com/radisvaliullin/nano-tgbot"
 	pathExamConf = "config/example.config.yml"
 
 	// ENV - default enviroment variables
@@ -41,7 +42,7 @@ func NewAppConfig() (*AppConfig, error) {
 	if confPath == "" {
 		confPath = pathExamConf
 	}
-	fullConfPath := path.Join(getGOPATH(), confPath)
+	fullConfPath := path.Join(getGOPATH(), "src", pathProjRoot, confPath)
 
 	// open config file
 	f, err := os.Open(fullConfPath)
