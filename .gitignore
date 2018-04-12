@@ -1,0 +1,5 @@
+# config
+/config/*.config.yml
+/config/*setenv.sh
+!/config/example.config.yml
+!/config/example.setenv.sh

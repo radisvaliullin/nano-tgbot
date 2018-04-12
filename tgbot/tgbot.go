@@ -6,7 +6,11 @@ import (
 
 // BotConf - out nano bot configs
 type BotConf struct {
+	// keep token only env
 	Token string
+
+	//
+	DefaultMessage string
 }
 
 // Bot - our nano telegram bot (useless)

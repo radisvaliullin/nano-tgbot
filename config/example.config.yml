@@ -1,0 +1,10 @@
+# Nano telegram bot configuration file
+# don't use json for config file, only yaml (toml)
+# don't keep in conf file critical data like token (passwords)
+
+# Log
+log:
+  level: debug
+
+bot:
+  defaultmessage: "Hi. I am stupid bot. Sorry, I can't help you."
