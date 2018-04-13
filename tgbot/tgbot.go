@@ -20,8 +20,10 @@ type BotConf struct {
 type Bot struct {
 	conf *BotConf
 
-	botAPI  *tgbotapi.BotAPI
-	updChan chan tgbotapi.Update
+	botAPI     *tgbotapi.BotAPI
+	updChan    chan tgbotapi.Update
+	updStopSig chan struct{}
+	updHdlDone chan struct{}
 }
 
 // NewBot - return new bot object
@@ -47,6 +49,9 @@ func (b *Bot) Start() error {
 
 	// updates (income messages from users)
 	b.updChan = make(chan tgbotapi.Update, b.botAPI.Buffer)
+	b.updStopSig = make(chan struct{})
+	b.updHdlDone = make(chan struct{})
+
 	// run bot updates
 	go b.updates()
 
@@ -56,8 +61,20 @@ func (b *Bot) Start() error {
 	return nil
 }
 
+// Stop -
+func (b *Bot) Stop() {
+	b.updStopSig <- struct{}{}
+}
+
+// WaitStop -
+func (b *Bot) WaitStop() {
+	<-b.updHdlDone
+}
+
 // run - not public method for run bot in goroutine
 func (b *Bot) run() {
+	// defer done signal
+	defer func() { b.updHdlDone <- struct{}{} }()
 
 	// do something
 	for upd := range b.updChan {
@@ -82,10 +99,14 @@ func (b *Bot) updates() {
 
 	// updates config
 	uc := tgbotapi.NewUpdate(0)
-	uc.Timeout = 60
+	uc.Timeout = 10
 
 	for {
 		select {
+		case <-b.updStopSig:
+			close(b.updChan)
+			return
+
 		default:
 			updates, err := b.botAPI.GetUpdates(uc)
 			if err != nil {

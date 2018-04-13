@@ -2,6 +2,8 @@ package main
 
 import (
 	"log"
+	"os"
+	"os/signal"
 	"time"
 
 	"github.com/radisvaliullin/nano-tgbot/tgbot"
@@ -37,8 +39,22 @@ func main() {
 		zap.L().Fatal("tgbot start", zap.Error(err))
 	}
 
-	for {
-		zap.L().Info("hearbit")
-		time.Sleep(time.Second * 10)
+	// heartbit
+	go func() {
+		for {
+			zap.L().Info("hearbit")
+			time.Sleep(time.Second * 10)
+		}
+	}()
+
+	// handle stop signal
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	for sig := range c {
+		zap.L().Info("catch os signal", zap.Any("sig", sig))
+		bot.Stop()
+		zap.L().Info("wait stop")
+		bot.WaitStop()
+		return
 	}
 }
