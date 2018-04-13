@@ -1,6 +1,7 @@
 package tgbot
 
 import (
+	"fmt"
 	"time"
 
 	"go.uber.org/zap"
@@ -24,6 +25,10 @@ type Bot struct {
 	updChan    chan tgbotapi.Update
 	updStopSig chan struct{}
 	updHdlDone chan struct{}
+
+	userResp chan UserResp
+
+	disp *Dispatcher
 }
 
 // NewBot - return new bot object
@@ -32,7 +37,11 @@ func NewBot(conf *BotConf) *Bot {
 	if conf == nil {
 		conf = &BotConf{}
 	}
-	return &Bot{conf: conf}
+	b := &Bot{
+		conf:     conf,
+		userResp: make(chan UserResp, 1000),
+	}
+	return b
 }
 
 // Start - starts out bot, and if need init addition components
@@ -51,6 +60,11 @@ func (b *Bot) Start() error {
 	b.updChan = make(chan tgbotapi.Update, b.botAPI.Buffer)
 	b.updStopSig = make(chan struct{})
 	b.updHdlDone = make(chan struct{})
+
+	// start dispatcher
+	dsp := NewDispatcher(b.userResp)
+	dsp.Start()
+	b.disp = dsp
 
 	// run bot updates
 	go b.updates()
@@ -77,19 +91,22 @@ func (b *Bot) run() {
 	defer func() { b.updHdlDone <- struct{}{} }()
 
 	// do something
-	for upd := range b.updChan {
+	for {
+		select {
+		case upd := <-b.updChan:
+			if upd.Message == nil {
+				continue
+			}
+			b.disp.GetBotUpdatesChan() <- upd
 
-		if upd.Message == nil {
-			continue
-		}
+		case ur := <-b.userResp:
+			// resp message
+			msg := tgbotapi.NewMessage(ur.chatID, fmt.Sprintf("%v - %s", ur.userID, b.conf.DefaultMessage))
 
-		// resp message
-		msg := tgbotapi.NewMessage(upd.Message.Chat.ID, b.conf.DefaultMessage)
-		msg.ReplyToMessageID = upd.Message.MessageID
-
-		_, err := b.botAPI.Send(msg)
-		if err != nil {
-			zap.L().Error("tgbot: send resp message", zap.Error(err))
+			_, err := b.botAPI.Send(msg)
+			if err != nil {
+				zap.L().Error("tgbot: send resp message", zap.Error(err))
+			}
 		}
 	}
 }
