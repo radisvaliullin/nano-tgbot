@@ -4,6 +4,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/radisvaliullin/nano-tgbot/tgbot"
+
 	"github.com/radisvaliullin/nano-tgbot/config"
 	"github.com/radisvaliullin/nano-tgbot/zlog"
 	"go.uber.org/zap"
@@ -27,6 +29,13 @@ func main() {
 	// you must use self logger for each component of your app
 	zlog.SetColorZapGlobalLogger()
 	zap.L().Info("zap global logger setup")
+
+	// start bot
+	bot := tgbot.NewBot(conf.Bot)
+	err = bot.Start()
+	if err != nil {
+		zap.L().Fatal("tgbot start", zap.Error(err))
+	}
 
 	for {
 		zap.L().Info("hearbit")
