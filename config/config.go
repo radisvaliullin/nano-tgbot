@@ -23,6 +23,7 @@ const (
 // LogConf -
 type LogConf struct {
 	Level string
+	Mode  string
 }
 
 // AppConfig - all app configs

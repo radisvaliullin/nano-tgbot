@@ -5,6 +5,7 @@
 # Log
 log:
   level: debug
+  mode: local
 
 bot:
   defaultmessage: "Hi. I am stupid bot. Sorry, I can't help you."
