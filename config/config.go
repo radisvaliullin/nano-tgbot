@@ -63,7 +63,9 @@ func NewAppConfig() (*AppConfig, error) {
 
 	// Get bot token from env
 	c.Bot.Token = os.Getenv(envAppBotToken)
-
+	if c.Bot.Token == "" {
+		log.Fatal("Could not get token from the ENV variables")
+	}
 	return c, nil
 }
 

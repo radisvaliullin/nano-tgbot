@@ -25,6 +25,8 @@ type Bot struct {
 	updChan    chan tgbotapi.Update
 	updStopSig chan struct{}
 	updHdlDone chan struct{}
+	runStopSig chan struct{}
+	runDone	   chan struct{}
 
 	userResp chan UserResp
 
@@ -60,6 +62,8 @@ func (b *Bot) Start() error {
 	b.updChan = make(chan tgbotapi.Update, b.botAPI.Buffer)
 	b.updStopSig = make(chan struct{})
 	b.updHdlDone = make(chan struct{})
+	b.runStopSig = make(chan struct{})
+	b.runDone	 = make(chan struct{})
 
 	// start dispatcher
 	dsp := NewDispatcher(b.userResp)
@@ -77,18 +81,19 @@ func (b *Bot) Start() error {
 
 // Stop -
 func (b *Bot) Stop() {
-	b.updStopSig <- struct{}{}
+	b.runStopSig <- struct{}{}
 }
 
 // WaitStop -
 func (b *Bot) WaitStop() {
 	<-b.updHdlDone
+	<-b.runDone
 }
 
 // run - not public method for run bot in goroutine
 func (b *Bot) run() {
 	// defer done signal
-	defer func() { b.updHdlDone <- struct{}{} }()
+	defer func() { b.runDone <- struct{}{} }()
 
 	// do something
 	for {
@@ -107,6 +112,11 @@ func (b *Bot) run() {
 			if err != nil {
 				zap.L().Error("tgbot: send resp message", zap.Error(err))
 			}
+		case <-b.runStopSig:
+			b.updStopSig <- struct{}{}
+			b.runDone <- struct{}{}
+			close(b.userResp)
+			return
 		}
 	}
 }
@@ -122,6 +132,7 @@ func (b *Bot) updates() {
 		select {
 		case <-b.updStopSig:
 			close(b.updChan)
+			b.updHdlDone <- struct{}{}
 			return
 
 		default:
