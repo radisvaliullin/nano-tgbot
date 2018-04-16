@@ -36,13 +36,13 @@ func main() {
 	bot := tgbot.NewBot(conf.Bot)
 	err = bot.Start()
 	if err != nil {
-		zap.L().Fatal("tgbot start", zap.Error(err))
+		zap.L().Fatal("starting tgbot", zap.Error(err))
 	}
 
 	// heartbit
 	go func() {
 		for {
-			zap.L().Info("hearbit")
+			zap.L().Info("heartbit")
 			time.Sleep(time.Second * 10)
 		}
 	}()
@@ -51,10 +51,11 @@ func main() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	for sig := range c {
-		zap.L().Info("catch os signal", zap.Any("sig", sig))
+		zap.L().Info("caught os signal", zap.Any("sig", sig))
 		bot.Stop()
-		zap.L().Info("wait stop")
+		zap.L().Info("waiting bot to stop")
 		bot.WaitStop()
+		zap.L().Info("Bot successfully stopped")
 		return
 	}
 }
