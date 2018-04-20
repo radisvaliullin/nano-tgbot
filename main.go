@@ -35,6 +35,7 @@ func main() {
 	// start bot
 	bot := tgbot.NewBot(conf.Bot)
 	err = bot.Start()
+	zap.L().Info("tgbot started")
 	if err != nil {
 		zap.L().Fatal("tgbot start", zap.Error(err))
 	}
@@ -42,7 +43,7 @@ func main() {
 	// heartbit
 	go func() {
 		for {
-			zap.L().Info("hearbit")
+			zap.L().Info("heartbit")
 			time.Sleep(time.Second * 10)
 		}
 	}()

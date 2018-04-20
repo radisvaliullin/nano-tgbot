@@ -90,16 +90,33 @@ func (b *Bot) run() {
 	// defer done signal
 	defer func() { b.updHdlDone <- struct{}{} }()
 
-	// do something
+	// We should stop trying reading from b.updChan because it will be
+	// closed. So we need to break (or return) from the `for` loop
+	go func() {
+		for {
+			select {
+			case upd, ok := <-b.updChan:
+				if !ok {
+					// updChan is closed, closing the others:
+					close(b.disp.GetBotUpdatesChan())
+					return
+				}
+				if upd.Message == nil {
+					continue
+				}
+
+				b.disp.GetBotUpdatesChan() <- upd
+			}
+		}
+	}()
+
 	for {
 		select {
-		case upd := <-b.updChan:
-			if upd.Message == nil {
-				continue
+		case ur, ok := <-b.userResp:
+			if !ok {
+				// Channel is closed
+				return
 			}
-			b.disp.GetBotUpdatesChan() <- upd
-
-		case ur := <-b.userResp:
 			// resp message
 			msg := tgbotapi.NewMessage(ur.chatID, fmt.Sprintf("%v - %s", ur.userID, b.conf.DefaultMessage))
 
